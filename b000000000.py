@@ -13,7 +13,7 @@ session = mysqlx.get_session({
     "password": "password"
 })
 db = session.get_schema("world_x")
-session.close
+
 def charge(fichier):
    with open(fichier) as f:
       return json.load(f)
@@ -42,9 +42,30 @@ def lecture(fichier):
 
 def main():
   docs = lecture('b000000000.json')
-  print(len(docs.fetch_all()))
-  db = session.get_schema("world_x")
+  chefs = former_des_chefs(docs)
+  print(len(chefs.fetch_all()))
+  session.close
   
+def former_des_chefs(docs):
+
+  # Crée une nouvelle collection 'chefs_de_gouvernement'
+  nomColl = 'chefs_de_gouvernement'
+  maColl = db.create_collection(nomColl)
+  maColl.add({"HeadOfState": "Marc Ravalomanana","GovernmentForm": "Republic"}).execute()
+
+  # Manipuler la collection et la rajouter à la nouvelle
+  for doc in docs.fetch_all():
+    for country in doc.countries:
+      # Insert des documents JSON de type government
+      maColl.add(country['government']).execute()
+
+  # Trouver tous les documents JSON et les mettre en mémoire
+  docs = maColl.find().execute()
+
+  # Détruit la collection
+  #db.drop_collection(nomColl)
+
+  return docs
 
 if __name__== "__main__":
     main()
